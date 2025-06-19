@@ -31,6 +31,9 @@ app.get('/temp',(req,res)=>{
 app.get('/temp2',(req,res)=>{
   res.send("hii2");
 })
+app.get('/temp3',(req,res)=>{
+  res.send("hii2");
+})
 // Routes
 app.use('/user', userroutes);
 app.use('/project', projectroutes);
