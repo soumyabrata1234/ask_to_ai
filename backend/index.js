@@ -28,6 +28,9 @@ app.use(cookieParser());
 app.get('/temp',(req,res)=>{
   res.send("hii");
 })
+app.get('/temp2',(req,res)=>{
+  res.send("hii2");
+})
 // Routes
 app.use('/user', userroutes);
 app.use('/project', projectroutes);
