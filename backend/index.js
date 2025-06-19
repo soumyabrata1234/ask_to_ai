@@ -8,6 +8,8 @@ import connectDB from './db/db.js';
 import userroutes from './routes/userroutes.js';
 import projectroutes from './routes/projectroutes.js';
 import aiRoutes from './routes/ai.routes.js';
+import dotenv from 'dotenv';
+dotenv.config(); // Load environment variables from .env file
 import { main} from './ai/ai.js'; // Import AI utility function
 // Connect to database
 connectDB();
@@ -33,7 +35,7 @@ app.use('/ai', aiRoutes);
 // Setup Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173', // Use
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -103,7 +105,7 @@ io.on('connection', (socket) => {
 });
 
 // Start the server
-const PORT = 3000;
+const PORT = process.env.PORT || 3000; // Use PORT from .env or default to 3000
 server.listen(PORT, () => {
  // console.log(`✅ Server listening on http://localhost:${PORT}`);
 });
