@@ -5,6 +5,7 @@ import { UserContext } from '../context/Usercontext.jsx';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 import axios from 'axios' // Import axios instance
 const Login = () => {
+    const url = import.meta.env.VITE_BACKEND_URL ; // Define the backend URL
     const navigate = useNavigate(); // Initialize useNavigate
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -21,7 +22,7 @@ const Login = () => {
       //  navigate('/home'); 
 
          const response = await axios.post(
-        'http://localhost:3000/user/login', 
+        `${url}/user/login`, 
         { email, password },
         { withCredentials: true } 
       );

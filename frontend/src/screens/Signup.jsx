@@ -5,7 +5,7 @@ import { UserContext } from "../context/Usercontext.jsx";
 import { useNavigate } from "react-router-dom"; 
 import axios from "axios"; 
 const Signup = () => {
-
+    const url = import.meta.env.VITE_BACKEND_URL ; // Define the backend URL
     const navigate = useNavigate(); // Initialize useNavigate
     const { setemail } = useContext(UserContext); // Access the setemail function from UserContext  
      
@@ -23,7 +23,7 @@ const Signup = () => {
         e.preventDefault();
          
          const response = await axios.post(
-        'http://localhost:3000/user/register', 
+        `${url}/user/register`, 
         { email: formData.email, password: formData.password },
         { withCredentials: true } 
       );

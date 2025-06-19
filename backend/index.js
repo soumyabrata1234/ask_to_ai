@@ -90,7 +90,7 @@ io.on('connection', (socket) => {
         }
 
     if (project_id && message) {
-     // console.log(`💬 Message to ${project_id}: ${message} : ${sender}`);
+     console.log(`💬 Message to ${project_id}: ${message} : ${sender}`);
       socket.to(project_id).emit('receiveMessage', { message, sender });
     }
   });

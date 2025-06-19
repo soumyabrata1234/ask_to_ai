@@ -8,7 +8,7 @@ const Home = () => {
   const [name, setProjectName] = useState("");
   const [projec, setProject] = useState([]);
   const navigate = useNavigate();
-  
+  const url = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
   
 
 
@@ -23,7 +23,7 @@ const Home = () => {
     setIsFormOpen(false);
   // Get the token from local storage
       const response = await axios.post(
-        'http://localhost:3000/project/create', 
+        `${url}/project/create`, 
         {name },
         { withCredentials: true } 
       );
@@ -36,7 +36,8 @@ const Home = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/project/get", {
+        console.log(import.meta.env.VITE_BACKEND_URL);
+        const response = await axios.get( url + "/project/get", {
           withCredentials: true,
         });
         setProject(response.data.projects);
