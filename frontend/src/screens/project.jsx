@@ -245,35 +245,43 @@ const Project = () => {
                         </div>
                         <button
                             onClick={async () => {
-                                await webContainer.mount(fileTree);
+    if (!webContainer) {
+        console.warn("⚠️ WebContainer is not initialized yet.");
+        return;
+    }
 
-                                const installProcess = await webContainer.spawn("npm", ["install"]);
+    try {
+        await webContainer.mount(fileTree);
 
-                                installProcess.output.pipeTo(new WritableStream({
-                                    write(chunk) {
-                                        console.log(chunk);
-                                    }
-                                }));
+        const installProcess = await webContainer.spawn("npm", ["install"]);
+        installProcess.output.pipeTo(new WritableStream({
+            write(chunk) {
+                console.log("[install]", chunk);
+            }
+        }));
 
-                                 if (runProcess) {
-                                        runProcess.kill()
-                                    }
+        if (runProcess) {
+            runProcess.kill();
+        }
 
-                                const runprocess = await webContainer.spawn("npm", ["start"]);
+        const runprocess = await webContainer.spawn("npm", ["start"]);
+        runprocess.output.pipeTo(new WritableStream({
+            write(chunk) {
+                console.log("[start]", chunk);
+            }
+        }));
 
-                                runprocess.output.pipeTo(new WritableStream({
-                                    write(chunk) {
-                                        console.log(chunk);
-                                    }
-                                }));
+        setRunProcess(runprocess);
 
-                                 setRunProcess(runprocess);
+        webContainer.on('server-ready', (port, url) => {
+            console.log(`Server is running at ${url}`);
+            setIframeurl(url);
+        });
+    } catch (err) {
+        console.error("❌ WebContainer error:", err);
+    }
+}}
 
-                                webContainer.on('server-ready', (port, url) => {
-                                    console.log(`Server is running at ${url}`);
-                                    setIframeurl(url);
-                                });
-                            }}
                             className="absolute right-4 top-2 bg-gray-200 text-gray-800 px-4 py-1 rounded shadow hover:bg-gray-300"
                         >
                             run
