@@ -5,7 +5,7 @@ let socketInstance = null;
 
 
 export const initializeSocket = (project_id) => {
-    socketInstance = socket("localhost:3000", {
+    socketInstance = socket("https://ask-to-ai-5.onrender.com", {
         auth: {
             token: localStorage.getItem('token')
         },
