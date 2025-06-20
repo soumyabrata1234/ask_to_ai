@@ -1,9 +1,11 @@
 import React from 'react'
 import Routess from './routes/Routess.jsx'
 import { UserProvider } from './context/Usercontext.jsx'
+import { useNavigate } from 'react-router-dom'
 
 const App = () => {
   const isHome = window.location.pathname === '/';
+  const navigate = useNavigate(); // 🟢 This handles client-side navigation
 
   return (
     <UserProvider>
@@ -20,13 +22,13 @@ const App = () => {
             <div className="flex justify-center space-x-4">
               <button
                 className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-semibold py-2 px-6 rounded transition"
-                onClick={() => window.location.href = '/login'}
+                onClick={() => navigate('/login')} // ✅ Client-side navigation
               >
                 Login
               </button>
               <button
                 className="bg-green-500 hover:bg-green-600 dark:bg-green-700 dark:hover:bg-green-800 text-white font-semibold py-2 px-6 rounded transition"
-                onClick={() => window.location.href = '/signup'}
+                onClick={() => navigate('/signup')} // ✅ Client-side navigation
               >
                 Sign Up
               </button>
