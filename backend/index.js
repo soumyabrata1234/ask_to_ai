@@ -111,7 +111,7 @@ io.on('connection', (socket) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 3000; // Use PORT from .env or default to 3000
+const PORT = process.env.PORT ; // Use PORT from .env or default to 3000
 server.listen(PORT, () => {
  // console.log(`✅ Server listening on http://localhost:${PORT}`);
 });
