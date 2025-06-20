@@ -15,23 +15,33 @@ const Home = () => {
   const handleButtonClick = () => {
     setIsFormOpen(!isFormOpen);
   };
+const handleFormSubmit = async (e) => {
+  e.preventDefault();
+  setProjectName("");
+  setIsFormOpen(false);
 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-   // console.log("Project Name:", name);
-    setProjectName("");
-    setIsFormOpen(false);
-  // Get the token from local storage
-      const response = await axios.post(
-        `${url}/project/create`, 
-        {name },
-        { withCredentials: true } 
-      );
-      if (response.status === 200) {
-        console.log(response.data); // Handle the response as needed
+  const token = localStorage.getItem('token');
+
+  try {
+    const response = await axios.post(
+      `${url}/project/create`,
+      { name },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`  // ✅ Send JWT here
+        }
       }
+    );
 
-  };
+    if (response.status === 200) {
+      console.log(response.data);
+      // optionally refresh project list
+    }
+  } catch (err) {
+    console.error("Error creating project:", err);
+  }
+};
+
  
   useEffect(() => {
      const fetchProjects = async () => {
