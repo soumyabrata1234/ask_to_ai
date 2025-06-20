@@ -34,19 +34,21 @@ const Home = () => {
   };
  
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        console.log(import.meta.env.VITE_BACKEND_URL);
-        const response = await axios.get( url + "/project/get", {
-          withCredentials: true,
-        });
-        setProject(response.data.projects);
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-      }
-    };
+     const fetchProjects = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(url + "/project/get", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setProject(response.data.projects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    }
+  };
 
-    fetchProjects();
+  fetchProjects();
     }, [])
 
     const handleLogout = () => {
