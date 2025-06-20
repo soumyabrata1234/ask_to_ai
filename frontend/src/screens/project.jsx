@@ -12,8 +12,6 @@ const Project = () => {
     const [openFiles, setOpenFiles] = useState([]);
     const [fileTree, setFileTree] = useState({});
     const [sender, setSender] = useState('');
-    const location = useLocation();
-    const { name } = location.state || {};
     const [members, setMembers] = useState([]);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
@@ -21,10 +19,14 @@ const Project = () => {
     const [selectedUsers, setSelectedUsers] = useState([]);
     const [users, setUsers] = useState([]);
     const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
-    const token = localStorage.getItem('token');
     const [iframeurl, setIframeurl] = useState(null);
-    const url = import.meta.env.VITE_BACKEND_URL ;
-    // 🔴 Early return if name is missing (location.state is null)
+    const [loading, setLoading] = useState(true);
+
+    const location = useLocation();
+    const { name } = location.state || {};
+    const token = localStorage.getItem('token');
+    const url = import.meta.env.VITE_BACKEND_URL;
+
     if (!name) {
         return (
             <div className="flex items-center justify-center h-screen text-red-500 text-xl font-semibold">
@@ -36,11 +38,7 @@ const Project = () => {
     const handleSend = () => {
         if (input.trim()) {
             sendMessage('sendMessageToRoom', { project_id: name, message: input, sender });
-
-            setMessages((prevMessages) => [
-                ...prevMessages,
-                { message: input, align: 'right', sender }
-            ]);
+            setMessages((prev) => [...prev, { message: input, align: 'right', sender }]);
             setInput('');
         }
     };
@@ -57,6 +55,7 @@ const Project = () => {
         const added = users
             .filter((user) => selectedUsers.includes(user.id))
             .map((user) => user._id.toString());
+
         await axios.put(
             `${url}/project/add-user`,
             { name, users: added },
@@ -67,57 +66,52 @@ const Project = () => {
     };
 
     useEffect(() => {
-        axios.get(`${url}/user/getall`, {
-            headers: { Authorization: `Bearer ${token}` }
-        }).then(res => setUsers(res.data)).catch(console.log);
-
-        initializeSocket(name);
-        if (!webContainer) {
-            getWebContainer().then(container => {
-                setWebContainer(container);
-                console.log("container started");
-            });
-        }
-
-        receiveMessage('receiveMessage', (message) => {
-            const isAI = message?.sender?._id === 'ai' || message.sender === 'AI';
-
-            if (isAI) {
-                const parsedMessage = JSON.parse(message.message);
-                webContainer?.mount(message.fileTree);
-
-                if (message.fileTree) {
-                    setFileTree(message.fileTree || {});
-                }
-
-                if (parsedMessage.fileTree) {
-                    setFileTree(parsedMessage.fileTree);
-                }
-            }
-
-            setMessages((prevMessages) => [
-                ...prevMessages,
-                {
-                    ...message,
-                    align: isAI ? 'left' : (message.sender === sender ? 'right' : 'left'),
-                    isAI
-                }
-            ]);
-        });
-
-        const fetchMembers = async () => {
+        const init = async () => {
             try {
-                const res = await axios.get(`${url}/project/get-users/${name}`, {
+                const res = await axios.get(`${url}/user/getall`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                setMembers(res.data.users);
-                setSender(res.data.email);
-            } catch (error) {
-                console.error('Error fetching project members:', error);
+                setUsers(res.data);
+
+                const container = await getWebContainer();
+                setWebContainer(container);
+                console.log('WebContainer started');
+
+                initializeSocket(name);
+
+                receiveMessage('receiveMessage', (message) => {
+                    const isAI = message?.sender?._id === 'ai' || message.sender === 'AI';
+                    const parsed = isAI ? JSON.parse(message.message) : null;
+
+                    const newTree = parsed?.fileTree || message.fileTree;
+                    if (newTree) {
+                        setFileTree(newTree);
+                        container.mount(newTree);
+                    }
+
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            ...message,
+                            align: isAI ? 'left' : (message.sender === sender ? 'right' : 'left'),
+                            isAI
+                        }
+                    ]);
+                });
+
+                const membersRes = await axios.get(`${url}/project/get-users/${name}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setMembers(membersRes.data.users);
+                setSender(membersRes.data.email);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
             }
         };
 
-        fetchMembers();
+        init();
     }, []);
 
     return (
@@ -129,13 +123,12 @@ const Project = () => {
                     <button onClick={() => setIsMembersModalOpen(true)} className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Show Members</button>
                 </div>
 
-                {/* Chat Area */}
-                <div className="flex-1 flex flex-col gap-2 overflow-y-auto mb-4 p-4 bg-gray-700 rounded shadow-inner" style={{ overflowX: 'hidden', minHeight: 0 }}>
+                <div className="flex-1 flex flex-col gap-2 overflow-y-auto mb-4 p-4 bg-gray-700 rounded shadow-inner">
                     {messages.map((msg, idx) => (
                         <div key={idx} className={`flex ${msg.align === 'right' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-xl w-fit p-2 rounded break-words ${msg.isAI ? 'bg-gray-900' : 'bg-gray-600'}`}>
                                 <div className="font-semibold mb-1 text-sm">
-                                    {msg.isAI ? 'ai' : (msg.sender || 'User')}
+                                    {msg.isAI ? 'AI' : (msg.sender || 'User')}
                                 </div>
                                 <div className="text-sm">
                                     {msg.isAI ? (
@@ -149,7 +142,6 @@ const Project = () => {
                     ))}
                 </div>
 
-                {/* Input */}
                 <div className="flex gap-2">
                     <input
                         type="text"
@@ -244,9 +236,11 @@ const Project = () => {
                             ))}
                         </div>
                         <button
+                            disabled={!webContainer}
                             onClick={async () => {
-                                await webContainer.mount(fileTree);
+                                if (!webContainer) return;
 
+                                await webContainer.mount(fileTree);
                                 const installProcess = await webContainer.spawn("npm", ["install"]);
 
                                 installProcess.output.pipeTo(new WritableStream({
@@ -255,98 +249,68 @@ const Project = () => {
                                     }
                                 }));
 
-                                 if (runProcess) {
-                                        runProcess.kill()
-                                    }
+                                if (runProcess) {
+                                    runProcess.kill();
+                                }
 
                                 const runprocess = await webContainer.spawn("npm", ["start"]);
-
                                 runprocess.output.pipeTo(new WritableStream({
                                     write(chunk) {
                                         console.log(chunk);
                                     }
                                 }));
 
-                                 setRunProcess(runprocess);
+                                setRunProcess(runprocess);
 
                                 webContainer.on('server-ready', (port, url) => {
                                     console.log(`Server is running at ${url}`);
                                     setIframeurl(url);
                                 });
                             }}
-                            className="absolute right-4 top-2 bg-gray-200 text-gray-800 px-4 py-1 rounded shadow hover:bg-gray-300"
+                            className={`absolute right-4 top-2 px-4 py-1 rounded shadow 
+                                ${webContainer ? 'bg-gray-200 hover:bg-gray-300' : 'bg-gray-400 text-gray-600 cursor-not-allowed'}`}
                         >
-                            run
+                            Run
                         </button>
                     </div>
 
-                  <div className="code-content p-4 bg-gray-400 h-full overflow-y-auto">
-  {currentFile ? (
-    <textarea
-      className="w-full h-full text-sm text-gray-800 bg-white p-2 rounded resize-none"
-      value={fileTree[currentFile]?.file?.contents || ''}
-      onChange={(e) => {
-        const newContent = e.target.value;
-        setFileTree(prev => ({
-          ...prev,
-          [currentFile]: {
-            ...prev[currentFile],
-            file: {
-              ...prev[currentFile].file,
-              contents: newContent
-            }
-          }
-        }));
-      }}
-    />
-  ) : (
-    <p className="text-gray-500">Select a file to view its content</p>
-  )}
+                    <div className="code-content p-4 bg-gray-400 h-full flex flex-col gap-4 overflow-hidden">
+                        {currentFile ? (
+                            <textarea
+                                className="w-full flex-1 text-sm text-gray-800 bg-white p-2 rounded resize-none"
+                                value={fileTree[currentFile]?.file?.contents || ''}
+                                onChange={(e) => {
+                                    const newContent = e.target.value;
+                                    setFileTree(prev => ({
+                                        ...prev,
+                                        [currentFile]: {
+                                            ...prev[currentFile],
+                                            file: {
+                                                ...prev[currentFile].file,
+                                                contents: newContent
+                                            }
+                                        }
+                                    }));
+                                }}
+                            />
+                        ) : (
+                            <p className="text-gray-500">Select a file to view its content</p>
+                        )}
 
-<div className="code-content p-4 bg-gray-400 h-full flex flex-col gap-4 overflow-hidden">
-  {currentFile ? (
-    <textarea
-      className="w-full flex-1 text-sm text-gray-800 bg-white p-2 rounded resize-none"
-      value={fileTree[currentFile]?.file?.contents || ''}
-      onChange={(e) => {
-        const newContent = e.target.value;
-        setFileTree(prev => ({
-          ...prev,
-          [currentFile]: {
-            ...prev[currentFile],
-            file: {
-              ...prev[currentFile].file,
-              contents: newContent
-            }
-          }
-        }));
-      }}
-    />
-  ) : (
-    <p className="text-gray-500">Select a file to view its content</p>
-  )}
-
-  {/* Iframe Preview Section */}
-  {iframeurl && webContainer && (
-    <div className="flex flex-col border border-gray-500 rounded bg-white h-[300px]">
-      <div className="address-bar">
-        <input
-          type="text"
-          onChange={(e) => setIframeurl(e.target.value)}
-          value={iframeurl}
-          className="w-full p-2 px-4 bg-white-200 text-black border-b border-gray-100"
-        />
-      </div>
-      <iframe src={iframeurl} className="w-full flex-1" />
-    </div>
-  )}
-</div>
-
-
-
-</div>
-
-
+                        {iframeurl && webContainer && (
+                            <div className="flex flex-col border border-gray-500 rounded bg-white h-[300px]">
+                                <div className="address-bar">
+                                    <input
+                                        type="text"
+                                        onChange={(e) => setIframeurl(e.target.value)}
+                                        value={iframeurl}
+                                        className="w-full p-2 px-4 bg-white-200 text-black border-b border-gray-100"
+                                    />
+                                </div>
+                                <iframe src={iframeurl} className="w-full flex-1" />
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
