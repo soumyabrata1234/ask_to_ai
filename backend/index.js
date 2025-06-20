@@ -19,7 +19,7 @@ const server = http.createServer(app); // Create server for HTTP + WebSockets
 
 // Middleware
 app.use(cors({
-  origin: 'https://ask-to-ai.vercel.app/',
+  origin: process.env.CORS_ORIGIN ,
   credentials: true,
 }));
 app.use(express.json());
